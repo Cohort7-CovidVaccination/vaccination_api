@@ -27,3 +27,11 @@ class Vaccination_registries(models.Model):
     people_vaccinated_per_hundred       = models.FloatField(blank=True)
     people_fully_vaccinated_per_hundred = models.FloatField(blank=True)
     daily_vaccinations_per_million      = models.FloatField(blank=True)
+
+class Manufacturer(models.Model):
+    """
+    Represent a manufacturer of vaccines
+    """
+
+    name = models.CharField(max_length=150, blank=False, db_index=True)
+    countries = models.ManyToManyField(Countries)

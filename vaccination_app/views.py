@@ -3,9 +3,10 @@ from django.shortcuts import render
 from django.http.response import JsonResponse
 from rest_framework.parsers import JSONParser
 from rest_framework import status
+from django.db.models import Count
 
-from vaccination_app.models import Countries, Vaccination_registries
-from vaccination_app.serializers import CountrySerializer, VaccRegistriesSerializer
+from vaccination_app.models import Countries, Vaccination_registries, Manufacturer
+from vaccination_app.serializers import CountrySerializer, VaccRegistriesSerializer, ManufacturerSerializer
 from rest_framework.decorators import api_view
 
 from datetime import datetime
@@ -111,3 +112,42 @@ def vacc_summary(request):
         registries_serializer = VaccRegistriesSerializer(vacc_summary)
 
         return JsonResponse(registries_serializer.data, safe=False, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def manufacturers(request):
+    """
+    Return the manufacturers list with the basic information.
+    Without params return the all list.
+    With iso_code param return the information of the requiered country
+    With manufacturer param return the manufactured and countries related
+    """
+    if request.method == 'GET':
+        manufacturers = Manufacturer.objects.all().annotate(total_countries=Count('countries'))
+
+        iso_code = request.GET.get('iso_code', None)
+        manufacturer = request.GET.get('manufacturer', None)
+
+        if iso_code is not None and manufacturer is not None:
+            return JsonResponse('''Use one of the allowed params: iso_code or manufactured
+                                or no params, try again''',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+
+        if iso_code is not None:
+            try:
+                country = Countries.objects.get(iso_code=str(iso_code).upper())
+            except:
+                return JsonResponse('Failed to search iso_code, try again',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+
+            manufacturers = manufacturers.filter(countries=country)
+
+        if manufacturer is not None:
+            try:
+                manufacturers = manufacturers.filter(name__icontains=str(manufacturer).lower())
+            except:
+                return JsonResponse('Failed to search manufacturer, try again',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+
+        manufacturers_serializer = ManufacturerSerializer(manufacturers, many=True)
+
+        return JsonResponse(manufacturers_serializer.data, safe=False, status=status.HTTP_200_OK)

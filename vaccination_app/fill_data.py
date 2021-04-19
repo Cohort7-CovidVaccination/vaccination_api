@@ -1,4 +1,4 @@
-from vaccination_app.models import Countries, Vaccination_registries
+from vaccination_app.models import Countries, Vaccination_registries, Manufacturer
 from datetime import datetime
 import os
 import requests
@@ -49,7 +49,8 @@ def download_csv(url):
 
 def Fill_countries():
     '''
-    Create registries in country table, after download the data
+    Create registries in country table and manufactured relation (many to many),
+    after download the data
 
             Parameters:
                     nothing
@@ -70,8 +71,49 @@ def Fill_countries():
                                     source_name=country[4] ,  source_website= country[5])
         country_instance.save()
 
-    #Filter labs and add to DB
+        #Clean labs column and add the country relationship
+        labs_cleaned = clean_labs(country[2])
+        insert_manufacturer_country(labs_cleaned, country_instance)
 
+def clean_labs(labs):
+    '''
+    Clean the manufacturer information to return the manufacturers separated
+
+            Parameters:
+                    labs: A list of manufacturers
+
+            Returns:
+                    labs_cleaned: A list of labs cleaned and ready to save
+    '''
+
+    labs_cleaned = []
+    labs_separated = labs.split(',')
+    for lab in labs_separated:
+        lab = lab.replace('/','-').lower().strip()
+        labs_cleaned.append(lab)
+
+    return labs_cleaned
+
+def insert_manufacturer_country(labs_cleaned, country):
+    '''
+    Create the relation into manufacturers (one or many) to the country.
+
+            Parameters:
+                    labs_cleaned: A list of manufacturers, ready to be saved
+                    country: A country instance of the created country.
+
+            Returns:
+                    nothing
+    '''
+
+    for lab in labs_cleaned:
+        try:
+            manufacturer = Manufacturer.objects.get(name=lab)
+        except:
+            manufacturer = Manufacturer(name=lab)
+            manufacturer.save()
+
+        manufacturer.countries.add(country)
 
 def Fill_vaccination():
     '''
@@ -109,8 +151,6 @@ def Fill_vaccination():
             country_instance = Countries.objects.create(iso_code=vaccination_data[1], name= vaccination_data[0])
             country_instance.save()
 
-        print(vaccination_data)
-        print(vaccination_data[1][1:len(vaccination_data[1])])
         vaccination_registry = Vaccination_registries.objects.create(
         country = Countries.objects.get(iso_code=vaccination_data[1]), date_data = datetime.strptime(vaccination_data[2], '%Y-%m-%d'),
         total_vaccinations = vaccination_data[3], people_vaccinated = vaccination_data[4], people_fully_vaccinated = vaccination_data[5], daily_vaccinations_raw = vaccination_data[6],
@@ -118,3 +158,5 @@ def Fill_vaccination():
         people_fully_vaccinated_per_hundred = vaccination_data[10], daily_vaccinations_per_million = vaccination_data[11]
         )
         vaccination_registry.save()
+
+    print("All data stored")
