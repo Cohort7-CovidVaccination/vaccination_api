@@ -67,7 +67,7 @@ def Fill_countries():
 
     for country in data_countries[1::]:
 
-        country_instance = Countries.objects.create(iso_code=country[1], name= country[0],
+        country_instance = Countries.objects.create(iso_code=country[1], name= country[0].lower(),
                                     source_name=country[4] ,  source_website= country[5])
         country_instance.save()
 

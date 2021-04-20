@@ -28,6 +28,13 @@ def countries_list(request):
             if countries.count() == 0:
                 return JsonResponse('Country iso_code not found',safe=False, status= status.HTTP_400_BAD_REQUEST)
 
+        country_name = request.GET.get('country_name', None)
+        if country_name is not None:
+            countries = countries.filter(name__icontains=str(country_name).lower())
+
+            if countries.count() == 0:
+                return JsonResponse('Country name not found',safe=False, status= status.HTTP_400_BAD_REQUEST)
+
         countries_serializer = CountrySerializer(countries, many=True)
 
         return JsonResponse(countries_serializer.data, safe=False, status=status.HTTP_200_OK)
@@ -48,9 +55,10 @@ def vaccinations(request):
         iso_code = request.GET.get('iso_code', None)
         from_date = request.GET.get('from', None)
         to_date = request.GET.get('to', None)
+        country_name = request.GET.get('country_name', None)
 
-        if (iso_code is None and from_date is None and to_date is None):
-            return JsonResponse('Please send almost one of the allowed params iso_code, from or to',
+        if (iso_code is None and from_date is None and to_date is None and country_name is None):
+            return JsonResponse('Please send almost one of the allowed params country_name, iso_code, from or to',
                                 safe=False, status= status.HTTP_400_BAD_REQUEST)
 
         if iso_code is not None:
@@ -61,7 +69,15 @@ def vaccinations(request):
                                 safe=False, status= status.HTTP_400_BAD_REQUEST)
             vaccinations = Vaccination_registries.objects.filter(country=country)
 
-        if iso_code is None:
+        if country_name is not None:
+            try:
+                country = Countries.objects.get(name__icontains=str(country_name).lower())
+            except:
+                return JsonResponse('Failed to search country_name, try again',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+            vaccinations = Vaccination_registries.objects.filter(country=country)
+
+        if iso_code is None and country_name is None:
             if from_date is not None and to_date is None:
                 vaccinations = Vaccination_registries.objects.filter(date_data__gte=datetime.strptime(from_date, '%Y-%m-%d'))
 
@@ -71,6 +87,7 @@ def vaccinations(request):
             if from_date is not None and to_date is not None:
                 vaccinations = Vaccination_registries.objects.filter(date_data__gte=datetime.strptime(from_date, '%Y-%m-%d')).filter(
                     date_data__lte=datetime.strptime(to_date, '%Y-%m-%d'))
+
         else:
             if from_date is not None and to_date is None:
                 vaccinations = vaccinations.filter(date_data__gte=datetime.strptime(from_date, '%Y-%m-%d'))
@@ -97,12 +114,21 @@ def vacc_summary(request):
     if request.method == 'GET':
 
         iso_code = request.GET.get('iso_code', None)
+        country_name = request.GET.get('country_name', None)
 
         if iso_code is not None:
             try:
                 country = Countries.objects.get(iso_code=str(iso_code).upper())
             except:
                 return JsonResponse('Failed to search iso_code, try again',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+            vacc_summary = Vaccination_registries.objects.filter(country=country).order_by('-date_data')[0]
+
+        if country_name is not None:
+            try:
+                country = Countries.objects.get(name__icontains=str(country_name).lower())
+            except:
+                return JsonResponse('Failed to search country_name, try again',
                                 safe=False, status= status.HTTP_400_BAD_REQUEST)
             vacc_summary = Vaccination_registries.objects.filter(country=country).order_by('-date_data')[0]
         else:
@@ -126,6 +152,7 @@ def manufacturers(request):
 
         iso_code = request.GET.get('iso_code', None)
         manufacturer = request.GET.get('manufacturer', None)
+        country_name = request.GET.get('country_name', None)
 
         if iso_code is not None and manufacturer is not None:
             return JsonResponse('''Use one of the allowed params: iso_code or manufactured
@@ -137,6 +164,15 @@ def manufacturers(request):
                 country = Countries.objects.get(iso_code=str(iso_code).upper())
             except:
                 return JsonResponse('Failed to search iso_code, try again',
+                                safe=False, status= status.HTTP_400_BAD_REQUEST)
+
+            manufacturers = manufacturers.filter(countries=country)
+
+        if country_name is not None:
+            try:
+                country = Countries.objects.get(name__icontains=str(country_name).lower())
+            except:
+                return JsonResponse('Failed to search country_name, try again',
                                 safe=False, status= status.HTTP_400_BAD_REQUEST)
 
             manufacturers = manufacturers.filter(countries=country)
