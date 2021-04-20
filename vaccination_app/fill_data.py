@@ -59,7 +59,7 @@ def Fill_countries():
                     nothing
     '''
 
-    data_countries = download_csv(os.environ['URL_COUNTRY_DATA'])
+    data_countries = download_csv('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/locations.csv')
 
     if len(data_countries) == 0:
         print("failed to download country file")
@@ -126,7 +126,7 @@ def Fill_vaccination():
                     nothing
     '''
 
-    data_vacc = download_csv(os.environ['URL_VACCINATION_DATA'])
+    data_vacc = download_csv('https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/vaccinations/vaccinations.csv')
 
     if len(data_vacc) == 0:
         print("failed to download vaccination file")
