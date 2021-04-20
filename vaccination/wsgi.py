@@ -10,7 +10,6 @@ https://docs.djangoproject.com/en/3.2/howto/deployment/wsgi/
 import os
 
 from django.core.wsgi import get_wsgi_application
-from vaccination_app.fill_data import Fill_countries, Validate_db
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vaccination.settings')
 
@@ -19,4 +18,6 @@ django.setup()
 from django.core.management import call_command
 
 application = get_wsgi_application()
+
+from vaccination_app.fill_data import Validate_db
 Validate_db()
