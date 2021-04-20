@@ -14,5 +14,9 @@ from vaccination_app.fill_data import Fill_countries, Validate_db
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'vaccination.settings')
 
+import django
+django.setup()
+from django.core.management import call_command
+
 application = get_wsgi_application()
 Validate_db()
